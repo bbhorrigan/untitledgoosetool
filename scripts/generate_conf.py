@@ -14,49 +14,40 @@ from goosey.mde_datadumper import MDEDataDumper
 __author__ = "Claire Casalnova, Jordan Eberst, Wellington Lee, Victoria Wallace"
 __version__ = "1.2.5"
 
+def create_conf_string(section_name, dumper_class, additional_lines=None):
+    s = f'[{section_name}]\n'
+    s += '\n'.join([x.lstrip().replace('dump_', '') + '=False' for x in dir(dumper_class) if x.startswith('dump_')])
+    s += '\n'
+    if additional_lines:
+        s += '\n'.join(additional_lines) + '\n'
+    s += '\n'
+    return s
+
+def write_to_file(file_name, content):
+    with open(file_name, 'w') as f:
+        f.write(content)
+
 def main():
     auth_s = '[auth]\nusername=\npassword=\nappid=\nclientsecret=\n\n'
+    write_to_file('.auth', auth_s)
 
-    with open('.auth', 'w') as f:
-        f.write(auth_s)
-
-    s = '[config]\ntenant=\nus_government=\nmde_gcc=\nmde_gcc_high=\nexo_us_government=\nsubscriptionid=\nm365=\n\n'
+    config_s = '[config]\ntenant=\nus_government=\nmde_gcc=\nmde_gcc_high=\nexo_us_government=\nsubscriptionid=\nm365=\n\n'
+    config_s += '[filters]\ndate_start=\ndate_end=\n\n'
+    config_s += create_conf_string('azure', AzureDataDumper)
+    config_s += create_conf_string('azuread', AzureAdDataDumper)
+    config_s += create_conf_string('m365', M365DataDumper)
+    config_s += create_conf_string('mde', MDEDataDumper)
+    msgtrc_additional = ['setemailaddress=', 'direction=', 'notifyaddress=', 'originalclientip=', 'recipientaddress=', 'reporttitle=', 'reporttype=', 'senderaddress=']
+    config_s += create_conf_string('msgtrc', None, additional_lines=msgtrc_additional)
     
-    s += '[filters]\ndate_start=\ndate_end=\n\n'
-
-    s += '[azure]\n'
-    s += '\n'.join([x.lstrip().replace('dump_', '') + '=False' for x in dir(AzureDataDumper) if x.startswith('dump_')])
-    s += '\n\n'
-
-    s += '[azuread]\n'
-    s += '\n'.join([x.lstrip().replace('dump_', '') + '=False' for x in dir(AzureAdDataDumper) if x.startswith('dump_')])
-    s += '\n\n'
-
-    s += '[m365]\n'
-    s += '\n'.join([x.lstrip().replace('dump_', '') + '=False' for x in dir(M365DataDumper) if x.startswith('dump_')])
-    s += '\n\n'
-
-    s += '[mde]\n'
-    s += '\n'.join([x.lstrip().replace('dump_', '') + '=False' for x in dir(MDEDataDumper) if x.startswith('dump_')])
-    s += '\n\n'
-
-    s += '[msgtrc]\nsetemailaddress=\ndirection=\nnotifyaddress=\noriginalclientip=\nrecipientaddress=\nreporttitle=\nreporttype=\nsenderaddress=\n\n'
-
-    with open('.conf', 'w') as f:
-        f.write(s)
+    write_to_file('.conf', config_s)
 
     d4iotauth_s = '[auth]\nusername=\npassword=\nd4iot_sensor_token=\nd4iot_mgmt_token=\n\n'
+    write_to_file('.auth_d4iot', d4iotauth_s)
 
-    with open('.auth_d4iot', 'w') as f:
-        f.write(d4iotauth_s)    
-    d4iot_s = '[config]\n'
-    d4iot_s += 'd4iot_sensor_ip=\nd4iot_mgmt_ip=\n\n'
-    d4iot_s += '[d4iot]\n'
-    d4iot_s += '\n'.join([x.lstrip().replace('dump_', '') + '=False' for x in dir(DefenderIoTDumper) if x.startswith('dump_')])
-    d4iot_s += '\n\n'
-    
-    with open('.d4iot_conf', 'w') as f:
-        f.write(d4iot_s)
+    d4iot_s = '[config]\nd4iot_sensor_ip=\nd4iot_mgmt_ip=\n\n'
+    d4iot_s += create_conf_string('d4iot', DefenderIoTDumper)
+    write_to_file('.d4iot_conf', d4iot_s)
 
 if __name__ == "__main__":
     main()
